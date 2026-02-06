@@ -24,7 +24,7 @@ export const api = {
     return res.json();
   },
 
-  updateTodo: async (id: string, updates: Partial<{ text: string; completed: boolean }>) => {
+  updateTodo: async (id: string, updates: Partial<Todo>) => {
     const res = await fetch(`${BASE_URL}/todos/${id}`, {
       method: 'PUT',
       headers: {

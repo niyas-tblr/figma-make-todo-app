@@ -10,9 +10,10 @@ interface TodoItemProps {
   onToggle: (id: string) => void;
   onDelete: (id: string) => void;
   onEdit: (id: string, newText: string) => void;
+  onSelect?: (id: string) => void;
 }
 
-export function TodoItem({ todo, onToggle, onDelete, onEdit }: TodoItemProps) {
+export function TodoItem({ todo, onToggle, onDelete, onEdit, onSelect }: TodoItemProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState(todo.text);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -46,7 +47,10 @@ export function TodoItem({ todo, onToggle, onDelete, onEdit }: TodoItemProps) {
       )}
     >
       <button
-        onClick={() => onToggle(todo.id)}
+        onClick={(e) => {
+          e.stopPropagation();
+          onToggle(todo.id);
+        }}
         className={cn(
           "flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500/40",
           todo.completed
@@ -66,6 +70,7 @@ export function TodoItem({ todo, onToggle, onDelete, onEdit }: TodoItemProps) {
               onChange={(e) => setEditText(e.target.value)}
               onKeyDown={handleKeyDown}
               className="h-8 text-sm"
+              onClick={(e) => e.stopPropagation()}
             />
             <div className="flex items-center gap-1">
               <Button size="icon" className="h-8 w-8 text-green-600 hover:bg-green-50" variant="ghost" onClick={handleSave}>
@@ -86,8 +91,9 @@ export function TodoItem({ todo, onToggle, onDelete, onEdit }: TodoItemProps) {
           </div>
         ) : (
           <span
+            onClick={() => onSelect?.(todo.id)}
             className={cn(
-              "block truncate text-gray-700 font-medium transition-all decoration-2 decoration-gray-400",
+              "block truncate text-gray-700 font-medium transition-all decoration-2 decoration-gray-400 cursor-pointer hover:text-blue-600",
               todo.completed && "text-gray-400 line-through"
             )}
           >
@@ -101,7 +107,10 @@ export function TodoItem({ todo, onToggle, onDelete, onEdit }: TodoItemProps) {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => setIsEditing(true)}
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsEditing(true);
+            }}
             className="text-gray-400 hover:text-blue-600"
           >
             <Edit2 size={16} />
@@ -109,7 +118,10 @@ export function TodoItem({ todo, onToggle, onDelete, onEdit }: TodoItemProps) {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => onDelete(todo.id)}
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete(todo.id);
+            }}
             className="text-gray-400 hover:text-red-600"
           >
             <Trash2 size={16} />

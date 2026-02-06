@@ -1,4 +1,5 @@
-import { projectId, publicAnonKey } from '/utils/supabase/info';
+const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+const publicAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 const BASE_URL = `https://${projectId}.supabase.co/functions/v1/make-server-14f62892`;
 

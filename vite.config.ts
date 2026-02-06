@@ -4,30 +4,45 @@ import fs from 'fs'
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 
-// Check if the system Supabase info file exists (Figma environment)
-// If not, we're likely in a local/Vercel environment and need to shim it
+// Check for Figma environment file
+// In the Figma Make environment, Supabase constants are provided in a system file.
+// We extract these values and inject them into import.meta.env so the same code works everywhere.
 const supabaseInfoPath = path.resolve(__dirname, './utils/supabase/info.tsx');
 const hasSystemSupabaseInfo = fs.existsSync(supabaseInfoPath);
 
+let supabaseDefines = {};
+
+if (hasSystemSupabaseInfo) {
+  try {
+    const content = fs.readFileSync(supabaseInfoPath, 'utf-8');
+    const projectIdMatch = content.match(/export const projectId = "([^"]+)"/);
+    const anonKeyMatch = content.match(/export const publicAnonKey = "([^"]+)"/);
+
+    if (projectIdMatch && anonKeyMatch) {
+      supabaseDefines = {
+        'import.meta.env.VITE_SUPABASE_PROJECT_ID': JSON.stringify(projectIdMatch[1]),
+        'import.meta.env.VITE_SUPABASE_ANON_KEY': JSON.stringify(anonKeyMatch[1]),
+      };
+    }
+  } catch (e) {
+    console.error("Failed to read Supabase info", e);
+  }
+}
+
 export default defineConfig({
   plugins: [
-    // The React and Tailwind plugins are both required for Make, even if
-    // Tailwind is not being actively used – do not remove them
     react(),
     tailwindcss(),
   ],
   resolve: {
     alias: {
-      // Alias @ to the src directory
       '@': path.resolve(__dirname, './src'),
-      // If the system Supabase file is missing, alias the import to our local shim
-      // that uses import.meta.env
-      ...(!hasSystemSupabaseInfo ? {
-        '/utils/supabase/info': path.resolve(__dirname, './src/lib/supabase-env.ts')
-      } : {})
     },
   },
-
-  // File types to support raw imports. Never add .css, .tsx, or .ts files to this.
+  // In Figma: This injects the extracted values.
+  // In Local/Vercel: This object is empty, so Vite automatically reads from .env files.
+  define: {
+    ...supabaseDefines
+  },
   assetsInclude: ['**/*.svg', '**/*.csv'],
 })

@@ -154,7 +154,7 @@ export default function App() {
             <div className="inline-flex p-3 bg-blue-600 rounded-2xl shadow-lg shadow-blue-500/30 mb-4">
               <CheckCircle2 className="text-white w-8 h-8" />
             </div>
-            <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Task Master</h1>
+            <h1 className="text-3xl font-bold text-gray-900 tracking-tight">ToDO Master</h1>
             <p className="mt-2 text-gray-500">Sign in to sync your tasks across devices</p>
           </div>
           <Auth onSuccess={() => {}} />
@@ -181,7 +181,7 @@ export default function App() {
               <div className="p-2 bg-blue-600 rounded-lg shadow-lg shadow-blue-500/30">
                 <CheckCircle2 className="text-white w-6 h-6" />
               </div>
-              Task Master
+              ToDO Master
             </h1>
             <button 
               onClick={handleSignOut}

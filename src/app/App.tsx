@@ -5,11 +5,16 @@ import { TodoDetail } from './components/TodoDetail';
 import { AddTodo } from './components/AddTodo';
 import { FilterTabs } from './components/FilterTabs';
 import { EmptyState } from './components/EmptyState';
-import { CheckCircle2, ListTodo, Loader2, CloudOff } from 'lucide-react';
+import { Auth } from './components/auth/Auth';
+import { CheckCircle2, ListTodo, Loader2, CloudOff, LogOut } from 'lucide-react';
 import { api } from '../lib/api';
+import { supabase } from '../lib/supabase';
 import { toast, Toaster } from 'sonner';
+import { Session } from '@supabase/supabase-js';
 
 export default function App() {
+  const [session, setSession] = useState<Session | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
   const [todos, setTodos] = useState<Todo[]>([]);
   const [filter, setFilter] = useState<FilterType>('all');
   const [isLoading, setIsLoading] = useState(true);
@@ -17,8 +22,29 @@ export default function App() {
   const [selectedTodoId, setSelectedTodoId] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchTodos();
+    // Check active session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setAuthLoading(false);
+      if (session) fetchTodos();
+    });
+
+    // Listen for auth changes
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      if (session) fetchTodos();
+      else setTodos([]);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    toast.success('Signed out successfully');
+  };
 
   const fetchTodos = async () => {
     try {
@@ -111,6 +137,32 @@ export default function App() {
 
   const selectedTodo = todos.find(t => t.id === selectedTodoId);
 
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#F3F4F6]">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+      </div>
+    );
+  }
+
+  if (!session) {
+    return (
+      <div className="min-h-screen bg-[#F3F4F6] flex items-center justify-center p-4">
+        <Toaster position="bottom-right" />
+        <div className="w-full max-w-md space-y-8">
+           <div className="text-center">
+            <div className="inline-flex p-3 bg-blue-600 rounded-2xl shadow-lg shadow-blue-500/30 mb-4">
+              <CheckCircle2 className="text-white w-8 h-8" />
+            </div>
+            <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Task Master</h1>
+            <p className="mt-2 text-gray-500">Sign in to sync your tasks across devices</p>
+          </div>
+          <Auth onSuccess={() => {}} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#F3F4F6] text-gray-900 font-sans selection:bg-blue-100 selection:text-blue-900">
       <Toaster position="bottom-right" />
@@ -123,19 +175,25 @@ export default function App() {
       <div className="relative z-10 max-w-2xl mx-auto px-4 py-8 sm:py-12 md:py-16">
         
         {/* Header */}
-        <header className="mb-8 text-center sm:text-left sm:flex sm:items-end sm:justify-between">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight text-gray-900 flex items-center justify-center sm:justify-start gap-3">
+        <header className="mb-8">
+          <div className="flex items-center justify-between mb-6">
+            <h1 className="text-3xl font-bold tracking-tight text-gray-900 flex items-center gap-3">
               <div className="p-2 bg-blue-600 rounded-lg shadow-lg shadow-blue-500/30">
                 <CheckCircle2 className="text-white w-6 h-6" />
               </div>
               Task Master
             </h1>
-            <p className="mt-2 text-gray-500">Manage your daily goals efficiently.</p>
+            <button 
+              onClick={handleSignOut}
+              className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+              title="Sign Out"
+            >
+              <LogOut className="w-5 h-5" />
+            </button>
           </div>
           
           {!selectedTodoId && (
-            <div className="mt-6 sm:mt-0 flex justify-center">
+            <div className="flex justify-center sm:justify-start">
               <FilterTabs 
                 currentFilter={filter} 
                 onFilterChange={setFilter} 
@@ -155,6 +213,15 @@ export default function App() {
         ) : (
           <main className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-xl shadow-gray-200/50 border border-white overflow-hidden ring-1 ring-gray-900/5">
             <div className="p-6 sm:p-8 space-y-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900">My Tasks</h2>
+                  <p className="text-sm text-gray-500">
+                    Welcome, {session.user.email}
+                  </p>
+                </div>
+              </div>
+
               <AddTodo onAdd={addTodo} />
               
               <div className="min-h-[300px]">

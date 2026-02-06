@@ -1,7 +1,13 @@
 import { defineConfig } from 'vite'
 import path from 'path'
+import fs from 'fs'
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
+
+// Check if the system Supabase info file exists (Figma environment)
+// If not, we're likely in a local/Vercel environment and need to shim it
+const supabaseInfoPath = path.resolve(__dirname, './utils/supabase/info.tsx');
+const hasSystemSupabaseInfo = fs.existsSync(supabaseInfoPath);
 
 export default defineConfig({
   plugins: [
@@ -14,6 +20,11 @@ export default defineConfig({
     alias: {
       // Alias @ to the src directory
       '@': path.resolve(__dirname, './src'),
+      // If the system Supabase file is missing, alias the import to our local shim
+      // that uses import.meta.env
+      ...(!hasSystemSupabaseInfo ? {
+        '/utils/supabase/info': path.resolve(__dirname, './src/lib/supabase-env.ts')
+      } : {})
     },
   },
 
